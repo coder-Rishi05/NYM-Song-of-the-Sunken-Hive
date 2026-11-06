@@ -1,0 +1,110 @@
+:root {
+  --ink: #05060a;
+  --bone: #e8e4da;
+  --dim: #8a93a6;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--ink);
+  overflow: hidden;
+}
+
+body {
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--bone);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+#frame {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(ellipse at 50% 38%, #11151f 0%, #07080d 55%, #030407 100%);
+}
+
+#game {
+  display: block;
+  background: #05070c;
+  box-shadow:
+    0 0 0 1px rgba(160, 180, 220, 0.08),
+    0 30px 90px rgba(0, 0, 0, 0.85);
+  image-rendering: auto;
+  cursor: crosshair;
+}
+
+#boot {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #05070c;
+  z-index: 5;
+  transition: opacity 900ms ease, visibility 900ms ease;
+}
+
+#boot.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.boot-title {
+  font-size: clamp(48px, 8vw, 110px);
+  letter-spacing: 0.22em;
+  margin-left: 0.22em;
+  color: #eef0f4;
+  text-shadow: 0 0 40px rgba(150, 190, 255, 0.25);
+}
+
+.boot-sub {
+  font-size: clamp(11px, 1.4vw, 16px);
+  letter-spacing: 0.5em;
+  margin-left: 0.5em;
+  color: #8b96ab;
+  text-transform: uppercase;
+}
+
+.boot-bar {
+  margin-top: 26px;
+  width: min(320px, 50vw);
+  height: 1px;
+  background: rgba(150, 170, 210, 0.16);
+  overflow: hidden;
+}
+
+.boot-bar span {
+  display: block;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, #d8e4ff, transparent);
+  animation: load 1.6s ease-in-out infinite;
+}
+
+.boot-hint {
+  margin-top: 18px;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #5f6a80;
+  opacity: 0;
+  animation: hint 3s ease 1.2s forwards;
+}
+
+@keyframes load {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(360%); }
+}
+
+@keyframes hint {
+  to { opacity: 1; }
+}
