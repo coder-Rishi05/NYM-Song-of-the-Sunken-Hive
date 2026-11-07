@@ -39,7 +39,19 @@ export function drawNym(ctx, p, time) {
   }
   ctx.scale(p.facing * dashStretch, 1 / dashStretch);
   ctx.scale(1.08, 1.08);
-  ctx.rotate(lean);
+
+  // Attack dynamic body lunging and recoil
+  let attackLunge = 0;
+  let attackLean = 0;
+  if (p.attackT > 0) {
+    const at = 1 - p.attackT / (p.attackMax || 0.28);
+    // Sudden forward thrust peaking at mid-swing then recovering
+    attackLunge = Math.sin(at * Math.PI) * 5.5;
+    attackLean = p.attackDir === 'up' ? -0.22 : (p.attackDir === 'down' ? 0.25 : 0.18);
+  }
+
+  ctx.translate(attackLunge, 0);
+  ctx.rotate(lean + attackLean);
 
   drawScarfBack(ctx, p, time);
   drawLegs(ctx, p, run, time);
@@ -260,67 +272,114 @@ function drawArm(ctx, p, time) {
   ctx.strokeStyle = '#0e131d';
   ctx.lineWidth = 3.2;
   ctx.lineCap = 'round';
+
+  if (p.attackT > 0) {
+    const total = p.attackMax || 0.28;
+    const t = 1 - p.attackT / total;
+    // Dynamic swinging arm tracking slash arc
+    const swingAngle = p.attackDir === 'up'
+      ? -Math.PI / 2 + (t - 0.5) * 1.2
+      : (p.attackDir === 'down'
+        ? Math.PI / 2 + (t - 0.5) * 1.2
+        : -0.8 + t * 2.1);
+
+    ctx.save();
+    ctx.translate(5, -28);
+    ctx.rotate(swingAngle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(16, 2);
+    ctx.stroke();
+
+    // Splinter blade in hand during attack swing
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.4;
+    ctx.shadowColor = '#c2e4ff';
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.moveTo(12, 1);
+    ctx.lineTo(44, 2);
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
   ctx.beginPath();
   ctx.moveTo(5, -30);
   ctx.lineTo(9, -21);
   ctx.stroke();
 
   // idle nail rests low
-  if (p.attackT <= 0) {
-    ctx.strokeStyle = 'rgba(232,242,255,0.85)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(8, -20);
-    ctx.lineTo(21, -11);
-    ctx.stroke();
-  }
+  ctx.strokeStyle = 'rgba(232,242,255,0.85)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(8, -20);
+  ctx.lineTo(21, -11);
+  ctx.stroke();
 }
 
 function drawAttack(ctx, p) {
   const total = p.attackMax || 0.28;
   const t = 1 - p.attackT / total;
-  const active = p.attackT < total * 0.78 && p.attackT > total * 0.3;
-  const alpha = active ? 1 : 0.35 * (1 - Math.abs(t - 0.5) * 2);
+  const active = p.attackT < total * 0.82 && p.attackT > total * 0.2;
+  const alpha = active ? 1 : 0.4 * (1 - Math.abs(t - 0.5) * 2);
   let ang = 0;
   if (p.attackDir === 'up') ang = -Math.PI / 2;
   else if (p.attackDir === 'down') ang = Math.PI / 2;
 
   ctx.save();
-  ctx.translate(4, -26);
+  ctx.translate(6, -26);
   ctx.rotate(ang);
   ctx.globalCompositeOperation = 'lighter';
-  ctx.globalAlpha = 0.55 * alpha;
 
-  // crescent slash
-  const swing = -0.35 + t * 0.7;
+  // Multi-layered crescent slash with sharp energy trail
+  const swing = -0.55 + t * 1.1;
   ctx.rotate(swing);
+
+  // Outer ambient glow
+  ctx.globalAlpha = 0.35 * alpha;
   ctx.beginPath();
-  ctx.arc(0, 0, 46, -0.92, 0.92);
-  ctx.arc(0, 0, 29, 0.92, -0.92, true);
+  ctx.arc(0, 0, 58, -0.98, 0.98);
+  ctx.arc(0, 0, 24, 0.98, -0.98, true);
   ctx.closePath();
-  const g = ctx.createRadialGradient(0, 0, 26, 0, 0, 48);
-  g.addColorStop(0, 'rgba(190,220,255,0)');
-  g.addColorStop(0.6, 'rgba(210,235,255,0.55)');
-  g.addColorStop(1, 'rgba(255,255,255,0.05)');
+  const g = ctx.createRadialGradient(0, 0, 20, 0, 0, 60);
+  g.addColorStop(0, 'rgba(160,210,255,0)');
+  g.addColorStop(0.5, 'rgba(200,235,255,0.45)');
+  g.addColorStop(0.85, 'rgba(255,255,255,0.75)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = g;
   ctx.fill();
 
-  // leading edge
-  ctx.globalAlpha = 0.9 * alpha;
-  ctx.strokeStyle = '#eaf4ff';
-  ctx.lineWidth = 2;
+  // Core bright crescent blade wave
+  ctx.globalAlpha = 0.85 * alpha;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 3.2;
+  ctx.shadowColor = '#94d3ff';
+  ctx.shadowBlur = 10;
   ctx.beginPath();
-  ctx.arc(0, 0, 44, -0.85, 0.85);
+  ctx.arc(0, 0, 52, -0.95, 0.95);
   ctx.stroke();
 
-  // blade
-  ctx.globalAlpha = 0.9;
-  ctx.strokeStyle = '#dde7f7';
-  ctx.lineWidth = 2.4;
+  // Inner sharp edge
+  ctx.globalAlpha = 0.95 * alpha;
+  ctx.strokeStyle = '#e6f4ff';
+  ctx.lineWidth = 1.6;
   ctx.beginPath();
-  ctx.moveTo(6, 0);
-  ctx.lineTo(43, 0);
+  ctx.arc(0, 0, 47, -0.85, 0.85);
   ctx.stroke();
+
+  // Trailing slash flare streaks
+  ctx.globalAlpha = 0.7 * alpha;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1.2;
+  for (let i = -2; i <= 2; i++) {
+    const flareAng = i * 0.38;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(flareAng) * 36, Math.sin(flareAng) * 36);
+    ctx.lineTo(Math.cos(flareAng) * 56, Math.sin(flareAng) * 56);
+    ctx.stroke();
+  }
+
   ctx.restore();
 }
 

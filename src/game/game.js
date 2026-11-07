@@ -17,9 +17,10 @@ import { Projectiles } from './projectiles.js';
 import { createBoss, BOSS_DEFS } from './bosses.js';
 import {
   drawHUD, drawTitle, drawPause, drawMapScreen, drawDialogue, drawShop,
-  drawDeath, drawEnding, drawOptions, drawVignette, drawDebug, drawTransition,
-  drawPrompt,
+  drawDeath, drawEnding, drawOptions, drawControls, drawVignette, drawDebug, drawTransition,
+  drawPrompt, drawAttackList,
 } from '../ui/ui.js';
+import { TouchController, drawPortraitBlocker } from '../ui/touch.js';
 
 const SHOP_ITEMS = [
   { id: 'map', name: "Warden's Map", price: 120, desc: 'Reveals the shape of the hive.' },
@@ -70,6 +71,7 @@ export class Game {
     this.props = [];
     this.pickups = [];
     this.ghosts = [];
+    this.damageNumbers = [];
     this.particles = new Particles();
     this.projectiles = new Projectiles();
     this.camera = new Camera();
@@ -86,10 +88,14 @@ export class Game {
     this.deaths = 0;
     this.kills = 0;
     this.transition = null;
+    this.showAttackList = false;
+    this.showTimer = false;
     this.god = false;
     this.titleIndex = 0;
     this.pauseIndex = 0;
     this.optionIndex = 0;
+    this.controlsIndex = 0;
+    this.touch = new TouchController(canvas, input);
     this.dialogue = null;
     this.shop = null;
     this.endingT = 0;
@@ -256,7 +262,8 @@ export class Game {
     this.roomId = id;
     this.flags['visited:' + id] = true;
     this.transition = null;
-    this.exitCooldown = 0.4;
+    this.showAttackList = false;
+    this.exitCooldown = 0.5;
     this.projectiles.clear();
     this.particles.clear();
     this.ghosts = [];
@@ -302,6 +309,12 @@ export class Game {
       this.player.safeY = this.player.y;
     }
 
+    if (spawnName === 'east') {
+      this.player.facing = -1;
+    } else if (spawnName === 'west' || spawnName === 'start') {
+      this.player.facing = 1;
+    }
+
     this.props = this.room.props.map((p) => ({
       ...p,
       x: p.cx,
@@ -326,7 +339,7 @@ export class Game {
     }
 
     this.camera.setToTarget(
-      { x: this.player.x, y: this.player.y, w: this.player.w, h: this.player.h, facing: 1 },
+      { x: this.player.x, y: this.player.y, w: this.player.w, h: this.player.h, facing: this.player.facing },
       { w: this.room.pxW, h: this.room.pxH },
       true
     );
@@ -375,10 +388,17 @@ export class Game {
       return;
     }
 
+    // Freeze update while in mobile portrait mode
+    if (this.touch && this.touch.detectMobile() && this.touch.isPortrait()) {
+      return;
+    }
+
     switch (this.mode) {
       case 'title': this.updateTitle(dt); break;
       case 'options': this.updateOptions(dt, 'title'); break;
       case 'optionsPause': this.updateOptions(dt, 'paused'); break;
+      case 'controls': this.updateControls(dt, 'title'); break;
+      case 'controlsPause': this.updateControls(dt, 'paused'); break;
       case 'playing': this.updatePlaying(dt); break;
       case 'paused': this.updatePause(dt); break;
       case 'map': this.updateMap(dt); break;
@@ -393,7 +413,8 @@ export class Game {
   updateTitle(dt) {
     const input = this.input;
     const hasSave = !!readSave(SAVE_SLOT);
-    const items = hasSave ? 3 : 2;
+    const labels = this.titleLabels(hasSave);
+    const items = labels.length;
     if (input.wasPressed('up')) {
       this.titleIndex = (this.titleIndex + items - 1) % items;
       audio.sfx('menu');
@@ -404,15 +425,22 @@ export class Game {
     }
     if (input.wasPressed('confirm') || input.wasPressed('jump')) {
       audio.sfx('select');
-      const label = this.titleLabel(hasSave);
+      const label = labels[clamp(this.titleIndex, 0, labels.length - 1)];
       if (label === 'New Game') this.startNewGame();
       else if (label === 'Continue') this.continueGame();
-      else this.mode = 'options';
+      else if (label === 'Controls') {
+        this.mode = 'controls';
+        this.controlsIndex = 0;
+      } else this.mode = 'options';
     }
   }
 
+  titleLabels(hasSave) {
+    return hasSave ? ['Continue', 'New Game', 'Controls', 'Options'] : ['New Game', 'Controls', 'Options'];
+  }
+
   titleLabel(hasSave) {
-    const labels = hasSave ? ['Continue', 'New Game', 'Options'] : ['New Game', 'Options'];
+    const labels = this.titleLabels(hasSave);
     return labels[clamp(this.titleIndex, 0, labels.length - 1)];
   }
 
@@ -457,6 +485,30 @@ export class Game {
       return;
     }
 
+    if (input.wasPressed('attackList')) {
+      this.showAttackList = !this.showAttackList;
+      audio.sfx('menu');
+      return;
+    }
+
+    if (this.showAttackList) {
+      if (
+        input.wasPressed('attackList') ||
+        input.wasPressed('pause') ||
+        input.wasPressed('cancel') ||
+        input.wasPressed('confirm') ||
+        input.wasPressed('jump') ||
+        input.mousePressed.has('attack') ||
+        input.mousePressed.has('dash')
+      ) {
+        this.showAttackList = false;
+        audio.sfx('menu');
+        return;
+      }
+      this.camera.follow(this.player, { w: this.room.pxW, h: this.room.pxH }, dt);
+      return;
+    }
+
     if (input.wasPressed('pause')) {
       this.mode = 'paused';
       this.pauseIndex = 0;
@@ -465,6 +517,11 @@ export class Game {
     }
     if (input.wasPressed('map')) {
       this.mode = 'map';
+      audio.sfx('select');
+      return;
+    }
+    if (input.wasPressed('timer')) {
+      this.showTimer = !this.showTimer;
       audio.sfx('select');
       return;
     }
@@ -484,6 +541,7 @@ export class Game {
     this.updateContact();
     this.updateHazards();
     this.updateGhosts(dt);
+    this.updateDamageNumbers(dt);
 
     this.camera.follow(this.player, { w: this.room.pxW, h: this.room.pxH }, dt);
     audio.update(dt);
@@ -527,18 +585,37 @@ export class Game {
           p.hitTargets.add(e);
           p.attackHit = true;
           this.gainSoul(11);
-          this.hitstop = 0.035;
-          this.camera.addShake(3.5);
+          this.hitstop = 0.045;
+          this.camera.addShake(4);
           this.particles.burst(e.x + e.w / 2, e.y + e.h / 2, {
-            count: 9, speed: 150, color: '#ffe0b0', size: 2.2, life: 0.35,
+            count: 12, speed: 180, color: '#ffe0b0', size: 2.6, life: 0.4,
             shape: 'spark', additive: true,
           });
+          // Floating damage number popup
+          this.spawnDamageNumber(e.x + e.w / 2, e.y, dmg);
           if (p.attackDir === 'down') {
             p.vy = -430;
             p.jumpsLeft = p.has('wing') ? 1 : 0;
             audio.sfx('pogo');
             this.camera.addShake(2);
           }
+        }
+      }
+    }
+
+    // Pogo on hazard spikes
+    if (p.attackDir === 'down' && this.room && this.room.spikeRects) {
+      for (const s of this.room.spikeRects) {
+        if (rectsOverlap(rect, s)) {
+          p.vy = -430;
+          p.jumpsLeft = p.has('wing') ? 1 : 0;
+          p.attackHit = true;
+          audio.sfx('pogo');
+          this.camera.addShake(2.5);
+          this.particles.burst(p.x + p.w / 2, p.y + p.h, {
+            count: 10, speed: 130, color: '#ffcf8a', size: 2.4, life: 0.35, shape: 'spark', additive: true,
+          });
+          break;
         }
       }
     }
@@ -777,17 +854,21 @@ export class Game {
     this.projectiles.spawn(opts);
   }
 
-  spawnWisp(x, y, dir, facing) {
-    const vx = dir === 'up' ? 0 : facing * 460;
-    const vy = dir === 'up' ? -460 : 0;
+  spawnWisp(x, y, dir, facing, isUpgraded = false) {
+    const speed = isUpgraded ? 520 : 440;
+    const vx = dir === 'up' ? 0 : facing * speed;
+    const vy = dir === 'up' ? -speed : 0;
+    const damage = isUpgraded ? 16 : 8;
+    const r = isUpgraded ? 9 : 6.5;
+    const color = isUpgraded ? '#bfe8ff' : '#9ec5e8';
     this.projectiles.spawn({
-      type: 'wisp', x, y, vx, vy, r: 8, damage: 15, life: 1.5,
-      friendly: true, color: '#bfe8ff', speed: 460,
+      type: 'wisp', x, y, vx, vy, r, damage, life: 1.6,
+      friendly: true, color, speed,
     });
     this.particles.burst(x, y, {
-      count: 12, speed: 120, color: '#bfe8ff', size: 2.4, life: 0.4, additive: true,
+      count: isUpgraded ? 14 : 9, speed: 130, color, size: 2.4, life: 0.4, additive: true,
     });
-    this.camera.addShake(2);
+    this.camera.addShake(isUpgraded ? 2.5 : 1.5);
   }
 
   explode(x, y, radius, damage, color) {
@@ -807,6 +888,44 @@ export class Game {
     this.ghosts.push({ x, y, life: 0.22, facing: this.player.facing });
   }
 
+  spawnDamageNumber(x, y, dmg) {
+    this.damageNumbers.push({
+      x: x + (Math.random() - 0.5) * 12,
+      y: y - 8,
+      vy: -60,
+      val: dmg,
+      life: 0.65,
+      maxLife: 0.65,
+    });
+  }
+
+  updateDamageNumbers(dt) {
+    for (let i = this.damageNumbers.length - 1; i >= 0; i--) {
+      const d = this.damageNumbers[i];
+      d.life -= dt;
+      d.y += d.vy * dt;
+      d.vy += 80 * dt;
+      if (d.life <= 0) this.damageNumbers.splice(i, 1);
+    }
+  }
+
+  drawDamageNumbers(ctx) {
+    if (!this.damageNumbers.length) return;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 13px Georgia, serif';
+    for (const d of this.damageNumbers) {
+      const alpha = Math.min(1, d.life / (d.maxLife * 0.4));
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = '#ffcf8a';
+      ctx.shadowBlur = 6;
+      ctx.fillText(String(d.val), d.x, d.y);
+    }
+    ctx.restore();
+  }
+
   // -------------------------------------------------------------------------
   // Boss
   // -------------------------------------------------------------------------
@@ -823,9 +942,12 @@ export class Game {
       this.player.soul = this.player.maxSoul;
       this.toast('Moltguard falls. +120 shards, +20 soul', 3.4);
       this.saveData = this.buildSaveData();
+      writeSave(SAVE_SLOT, this.saveData);
     } else if (boss.type === 'warden') {
       this.shards += 250;
       this.toast('The Warden falls. The eastern door opens.', 3.6);
+      this.saveData = this.buildSaveData();
+      writeSave(SAVE_SLOT, this.saveData);
       audio.startZone('choir');
       setTimeout(() => audio.startZone(this.room.zone), 4000);
     } else if (boss.type === 'choir') {
@@ -867,7 +989,7 @@ export class Game {
   // -------------------------------------------------------------------------
   updatePause(dt) {
     const input = this.input;
-    const items = 4;
+    const items = 5;
     if (input.wasPressed('up')) {
       this.pauseIndex = (this.pauseIndex + items - 1) % items;
       audio.sfx('menu');
@@ -884,12 +1006,58 @@ export class Game {
       audio.sfx('select');
       if (this.pauseIndex === 0) this.mode = 'playing';
       else if (this.pauseIndex === 1) this.mode = 'map';
-      else if (this.pauseIndex === 2) this.mode = 'optionsPause';
+      else if (this.pauseIndex === 2) {
+        this.mode = 'controlsPause';
+        this.controlsIndex = 0;
+      } else if (this.pauseIndex === 3) this.mode = 'optionsPause';
       else {
         this.saveData = this.buildSaveData();
         writeSave(SAVE_SLOT, this.saveData);
         this.mode = 'title';
         this.loadingTitle = true;
+      }
+    }
+  }
+
+  updateControls(dt, backMode) {
+    const input = this.input;
+    if (input.rebindingAction) return;
+
+    const rowCount = 15;
+    if (input.wasPressed('up')) {
+      this.controlsIndex = (this.controlsIndex + rowCount - 1) % rowCount;
+      audio.sfx('menu');
+    }
+    if (input.wasPressed('down')) {
+      this.controlsIndex = (this.controlsIndex + 1) % rowCount;
+      audio.sfx('menu');
+    }
+    if (input.wasPressed('pause') || input.wasPressed('cancel')) {
+      this.mode = backMode;
+      audio.sfx('menu');
+      return;
+    }
+
+    const actions = ['left', 'right', 'up', 'down', 'jump', 'attack', 'dash', 'focus', 'cast', 'attackList', 'map'];
+    if (input.wasPressed('confirm') || input.wasPressed('jump')) {
+      audio.sfx('select');
+      const idx = this.controlsIndex;
+      if (idx < actions.length) {
+        input.startRebind(actions[idx]);
+      } else if (idx === 11) {
+        if (this.touch.userMode === 'auto') this.touch.userMode = 'always';
+        else if (this.touch.userMode === 'always') this.touch.userMode = 'off';
+        else this.touch.userMode = 'auto';
+      } else if (idx === 12) {
+        if (this.touch.scale === 1.0) this.touch.scale = 1.15;
+        else if (this.touch.scale > 1.0) this.touch.scale = 0.85;
+        else this.touch.scale = 1.0;
+        this.touch.layoutButtons(this.canvas.width, this.canvas.height);
+      } else if (idx === 13) {
+        input.resetBindings();
+        this.toast('Controls reset to defaults.', 2);
+      } else if (idx === 14) {
+        this.mode = backMode;
       }
     }
   }
@@ -1031,6 +1199,12 @@ export class Game {
   // -------------------------------------------------------------------------
   checkExits() {
     if (this.exitCooldown > 0 || this.transition) return;
+    if (this.boss && !this.boss.dead) {
+      this.toast('The arena is sealed. Defeat the foe.', 1.6);
+      this.exitCooldown = 1.4;
+      audio.sfx('gate');
+      return;
+    }
     const p = this.player;
     const rect = { x: p.x, y: p.y, w: p.w, h: p.h };
     for (const ex of this.room.exits) {
@@ -1065,9 +1239,16 @@ export class Game {
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     ctx.clearRect(0, 0, VIEW_W, VIEW_H);
 
-    if (this.mode === 'title' || this.mode === 'options') {
+    // Orientation guard: display vector rotation prompt in mobile portrait mode
+    if (this.touch && this.touch.detectMobile() && this.touch.isPortrait()) {
+      drawPortraitBlocker(ctx, VIEW_W, VIEW_H, this.time);
+      return;
+    }
+
+    if (this.mode === 'title' || this.mode === 'options' || this.mode === 'controls') {
       drawTitle(ctx, this);
       if (this.mode === 'options') drawOptions(ctx, this, 'title');
+      if (this.mode === 'controls') drawControls(ctx, this);
       return;
     }
     if (!this.room) {
@@ -1093,6 +1274,7 @@ export class Game {
     if (this.player) this.player.draw(ctx, this.time);
     this.projectiles.draw(ctx, this.time);
     this.particles.draw(ctx);
+    this.drawDamageNumbers(ctx);
     ctx.restore();
 
     drawForeground(ctx, this.room, this.camera, this.time);
@@ -1103,6 +1285,9 @@ export class Game {
     if (this.mode === 'options' || this.mode === 'optionsPause') {
       drawOptions(ctx, this, this.mode === 'options' ? 'title' : 'paused');
     }
+    if (this.mode === 'controls' || this.mode === 'controlsPause') {
+      drawControls(ctx, this);
+    }
     if (this.mode === 'map') drawMapScreen(ctx, this);
     if (this.mode === 'dialogue') drawDialogue(ctx, this);
     if (this.mode === 'shop') drawShop(ctx, this);
@@ -1110,6 +1295,7 @@ export class Game {
     if (this.mode === 'ending') drawEnding(ctx, this);
 
     if (this.prompt && this.mode === 'playing') drawPrompt(ctx, this, this.prompt);
+    if (this.showAttackList && this.mode === 'playing') drawAttackList(ctx, this);
     if (this.transition) drawTransition(ctx, this);
     if (this.flash > 0.01 && this.settings.flashes) {
       ctx.save();
@@ -1119,6 +1305,12 @@ export class Game {
       ctx.fillRect(0, 0, VIEW_W, VIEW_H);
       ctx.restore();
     }
+
+    // On-screen touch buttons for mobile
+    if (this.touch && this.mode === 'playing') {
+      this.touch.draw(ctx, VIEW_W, VIEW_H, this.time);
+    }
+
     if (DEBUG) drawDebug(ctx, this);
   }
 

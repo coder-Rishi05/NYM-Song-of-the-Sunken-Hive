@@ -235,9 +235,22 @@ export function drawBackdrop(ctx, room, cam, time) {
   ctx.fillStyle = haze;
   ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
-  if (room.zone === 'ember') drawEmbers(ctx, room, cam, time, pal);
-  if (room.zone === 'reliquary') drawSnow(ctx, room, cam, time, pal);
+  // ---- biomes weather & wildlife --------------------------------------
+  if (room.zone === 'sporefall' || room.zone === 'rootway') {
+    drawForestLeaves(ctx, room, cam, time, pal);
+    drawFireflies(ctx, room, cam, time, pal);
+  } else if (room.zone === 'ember') {
+    drawEmbers(ctx, room, cam, time, pal);
+  } else if (room.zone === 'cistern') {
+    drawWaterDrips(ctx, room, cam, time, pal);
+  } else if (room.zone === 'reliquary') {
+    drawSnow(ctx, room, cam, time, pal);
+  } else if (room.zone === 'cradle' || room.zone === 'vault') {
+    drawAshWinds(ctx, room, cam, time, pal);
+  }
+
   if (room.zone === 'choir') drawChoirLights(ctx, room, cam, time, pal);
+  drawWildlife(ctx, room, cam, time, pal);
 }
 
 // Foreground framing: roots and vines that pass in front of the knight but
@@ -376,6 +389,138 @@ function drawChoirLights(ctx, room, cam, time, pal) {
     ctx.fillStyle = hexA(pal.accent, 0.8);
     ctx.beginPath();
     ctx.arc(x, y, r * 0.26, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawForestLeaves(ctx, room, cam, time, pal) {
+  const rng = new RNG(room.id + ':leaves');
+  ctx.save();
+  for (let i = 0; i < 24; i++) {
+    const bx = rng.float(room.pxW, 0);
+    const by = rng.float(room.pxH, 0);
+    const speedY = rng.float(26, 12);
+    const speedX = rng.float(18, 6);
+    const phase = rng.float(Math.PI * 2, 0);
+    const x = ((bx - cam.x * 0.72 + time * speedX + Math.sin(time * 1.5 + phase) * 24) % room.pxW + room.pxW) % room.pxW;
+    const y = ((by - cam.y * 0.68 + time * speedY) % room.pxH + room.pxH) % room.pxH;
+    const rot = time * 2 + phase;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+    ctx.globalAlpha = 0.45 + 0.25 * Math.sin(time * 1.2 + i);
+    ctx.fillStyle = i % 3 === 0 ? '#4e7a54' : (i % 2 === 0 ? '#638f4d' : '#94a858');
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 5, 2.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function drawFireflies(ctx, room, cam, time, pal) {
+  const rng = new RNG(room.id + ':fireflies');
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 14; i++) {
+    const bx = rng.float(room.pxW, 0);
+    const by = rng.float(room.pxH, 0);
+    const x = bx - cam.x * 0.65 + Math.sin(time * 0.8 + i * 1.3) * 36;
+    const y = by - cam.y * 0.6 + Math.cos(time * 0.6 + i * 0.9) * 28;
+    const glow = Math.max(0, Math.sin(time * 2.2 + i * 2.4));
+    if (glow <= 0.05) continue;
+
+    ctx.globalAlpha = glow * 0.65;
+    ctx.fillStyle = i % 2 === 0 ? '#98f070' : '#ffd560';
+    ctx.beginPath();
+    ctx.arc(x, y, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.globalAlpha = glow * 0.2;
+    ctx.beginPath();
+    ctx.arc(x, y, 7.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawWaterDrips(ctx, room, cam, time, pal) {
+  const rng = new RNG(room.id + ':waterdrips');
+  ctx.save();
+  for (let i = 0; i < 10; i++) {
+    const x = rng.float(room.pxW - 40, 40) - cam.x * 0.7;
+    const cycle = (time * rng.float(0.7, 0.35) + i * 0.7) % 2.5; // 0 to 2.5 sec
+    const floorY = room.pxH - 30;
+
+    if (cycle < 1.2) {
+      // Falling drip
+      const fallT = cycle / 1.2;
+      const dripY = (fallT * fallT) * (floorY - 20);
+      ctx.globalAlpha = 0.55;
+      ctx.fillStyle = '#9bd0e8';
+      ctx.beginPath();
+      ctx.ellipse(x, dripY - cam.y * 0.7, 1.4, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Impact ripple
+      const rippleT = (cycle - 1.2) / 1.3;
+      const r = rippleT * 22;
+      ctx.globalAlpha = (1 - rippleT) * 0.45;
+      ctx.strokeStyle = '#a4dcf5';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.ellipse(x, floorY - cam.y * 0.7, r, r * 0.3, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawAshWinds(ctx, room, cam, time, pal) {
+  const rng = new RNG(room.id + ':ashwinds');
+  ctx.save();
+  for (let i = 0; i < 28; i++) {
+    const bx = rng.float(room.pxW, 0);
+    const by = rng.float(room.pxH, 0);
+    const speedX = rng.float(85, 35);
+    const x = ((bx - cam.x * 0.65 + time * speedX) % room.pxW + room.pxW) % room.pxW;
+    const y = by - cam.y * 0.6 + Math.sin(time * 1.2 + i) * 6;
+
+    ctx.globalAlpha = 0.22 + 0.18 * Math.sin(time * 2 + i);
+    ctx.fillStyle = i % 2 === 0 ? '#d4b080' : '#8c8078';
+    ctx.beginPath();
+    ctx.arc(x, y, rng.float(1.6, 0.7), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawWildlife(ctx, room, cam, time, pal) {
+  const rng = new RNG(room.id + ':wildlife');
+  ctx.save();
+  const count = 3;
+  for (let i = 0; i < count; i++) {
+    const speed = rng.float(38, 20);
+    const startX = rng.float(room.pxW + 400, -300);
+    const startY = rng.float(room.pxH * 0.45, 60);
+    const x = ((startX - cam.x * 0.25 - time * speed) % (room.pxW + 700) + (room.pxW + 700)) % (room.pxW + 700) - 350;
+    const y = startY - cam.y * 0.2 + Math.sin(time * 0.8 + i * 2) * 22;
+
+    const wingSpan = 8 + (i % 2) * 4;
+    const wingFlap = Math.sin(time * 8 + i * 3);
+
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = pal.far;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - wingSpan, y - wingFlap * (wingSpan * 0.7));
+    ctx.lineTo(x - wingSpan * 0.6, y);
+    ctx.lineTo(x, y + 2);
+    ctx.lineTo(x + wingSpan * 0.6, y);
+    ctx.lineTo(x + wingSpan, y - wingFlap * (wingSpan * 0.7));
+    ctx.closePath();
     ctx.fill();
   }
   ctx.restore();

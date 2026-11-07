@@ -202,8 +202,11 @@ export function drawHUD(ctx, game) {
   }
 
   // hints
-  text(ctx, 'TAB map    ESC pause', VIEW_W - 24, VIEW_H - 20, {
-    size: 11, color: 'rgba(150,168,194,0.55)', align: 'right', spacing: 1,
+  const hintMsg = game.showTimer
+    ? `TIME ${formatTime(game.playtime)}    [Q] ATTACK LIST    TAB MAP    ESC PAUSE`
+    : '[T] TIMER    [Q] ATTACK LIST    TAB MAP    ESC PAUSE';
+  text(ctx, hintMsg, VIEW_W - 24, VIEW_H - 20, {
+    size: 11, color: 'rgba(150,168,194,0.65)', align: 'right', spacing: 1,
   });
 }
 
@@ -319,10 +322,10 @@ export function drawTitle(ctx, game) {
   ctx.restore();
 
   const hasSave = !!game.saveData;
-  const labels = hasSave ? ['Continue', 'New Game', 'Options'] : ['New Game', 'Options'];
-  const startY = 430;
+  const labels = hasSave ? ['Continue', 'New Game', 'Controls', 'Options'] : ['New Game', 'Controls', 'Options'];
+  const startY = 410;
   for (let i = 0; i < labels.length; i++) {
-    const y = startY + i * 44;
+    const y = startY + i * 42;
     const selected = i === game.titleIndex;
     if (selected) {
       ctx.save();
@@ -377,9 +380,9 @@ export function drawPause(ctx, game) {
   ctx.stroke();
   ctx.restore();
 
-  const items = ['Resume', 'Map', 'Options', 'Quit to Title'];
+  const items = ['Resume', 'Map', 'Controls', 'Options', 'Quit to Title'];
   for (let i = 0; i < items.length; i++) {
-    const y = 270 + i * 46;
+    const y = 260 + i * 44;
     const sel = i === game.pauseIndex;
     if (sel) text(ctx, '\u2726', VIEW_W / 2 - 112, y, { size: 12, color: GOLD, align: 'center' });
     text(ctx, items[i], VIEW_W / 2, y, {
@@ -459,6 +462,193 @@ export function drawOptions(ctx, game, back) {
   text(ctx, 'ARROWS adjust    ENTER / ESC back', VIEW_W / 2, 560, {
     size: 11, color: 'rgba(140,158,184,0.55)', align: 'center',
   });
+}
+
+export function drawControls(ctx, game) {
+  ctx.save();
+  ctx.fillStyle = 'rgba(3,5,9,0.84)';
+  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+  ctx.restore();
+
+  const pw = 680;
+  const ph = 530;
+  panel(ctx, VIEW_W / 2 - pw / 2, 70, pw, ph, 0.94);
+  text(ctx, 'CONTROLS & COMMANDS', VIEW_W / 2, 106, { size: 22, color: BONE, align: 'center', spacing: 6 });
+  text(ctx, 'keyboard, mouse, and mobile touch preferences', VIEW_W / 2, 126, {
+    size: 11, color: 'rgba(150,168,194,0.65)', align: 'center',
+  });
+
+  const inp = game.input;
+  const touch = game.touch;
+  const rebinding = inp.rebindingAction;
+
+  const rows = [
+    { type: 'key', act: 'left', name: 'Move Left', val: inp.getBindingLabel('left') },
+    { type: 'key', act: 'right', name: 'Move Right', val: inp.getBindingLabel('right') },
+    { type: 'key', act: 'up', name: 'Aim Up', val: inp.getBindingLabel('up') },
+    { type: 'key', act: 'down', name: 'Aim Down', val: inp.getBindingLabel('down') },
+    { type: 'key', act: 'jump', name: 'Jump / Wingbeat', val: inp.getBindingLabel('jump') },
+    { type: 'key', act: 'attack', name: 'Melee Attack [A]', val: inp.getBindingLabel('attack') + ' / L-Click' },
+    { type: 'key', act: 'dash', name: 'Skitter Dash [D]', val: inp.getBindingLabel('dash') + ' / R-Click' },
+    { type: 'key', act: 'focus', name: 'Focus Heal [H]', val: inp.getBindingLabel('focus') },
+    { type: 'key', act: 'cast', name: 'Cast Wisp Bolt [C]', val: inp.getBindingLabel('cast') },
+    { type: 'key', act: 'attackList', name: 'Attack List Guide [Q]', val: inp.getBindingLabel('attackList') },
+    { type: 'key', act: 'map', name: 'Hive Map', val: inp.getBindingLabel('map') },
+    { type: 'touch_mode', name: 'Touch Controls (Mobile Phone Only)', val: touch ? touch.userMode.toUpperCase() : 'AUTO' },
+    { type: 'touch_size', name: 'Touch Button Size', val: touch ? (touch.scale === 1 ? 'MEDIUM' : touch.scale > 1 ? 'LARGE' : 'SMALL') : 'MEDIUM' },
+    { type: 'reset', name: 'Reset Controls to Defaults', val: '' },
+    { type: 'back', name: 'Back', val: '' },
+  ];
+
+  for (let i = 0; i < rows.length; i++) {
+    const y = 154 + i * 26;
+    const sel = i === game.controlsIndex;
+    const isThisRebinding = rebinding && rebinding === rows[i].act;
+
+    if (sel) {
+      ctx.save();
+      ctx.globalAlpha = 0.08;
+      ctx.fillStyle = GLOW;
+      ctx.fillRect(VIEW_W / 2 - pw / 2 + 25, y - 16, pw - 50, 22);
+      ctx.restore();
+      text(ctx, '\u2726', VIEW_W / 2 - pw / 2 + 36, y, { size: 10, color: GOLD, align: 'center' });
+    }
+
+    text(ctx, rows[i].name, VIEW_W / 2 - pw / 2 + 56, y, {
+      size: 13, color: sel ? '#ffffff' : '#9ca8bd',
+    });
+
+    const displayVal = isThisRebinding ? 'PRESS ANY KEY...' : rows[i].val;
+    text(ctx, displayVal, VIEW_W / 2 + pw / 2 - 50, y, {
+      size: 13, color: isThisRebinding ? '#ff8080' : (sel ? GOLD : '#6f829c'), align: 'right',
+    });
+  }
+
+  text(ctx, 'ARROWS navigate    ENTER rebind/toggle    ESC back', VIEW_W / 2, 574, {
+    size: 11, color: 'rgba(140,158,184,0.6)', align: 'center',
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Attack List & Moves Guide Overlay (Q) - Clean Minimalist Design
+// ---------------------------------------------------------------------------
+export function drawAttackList(ctx, game) {
+  ctx.save();
+  // Deep elegant backdrop
+  ctx.fillStyle = 'rgba(5, 7, 12, 0.88)';
+  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+
+  const pw = 680;
+  const ph = 430;
+  const px = VIEW_W / 2 - pw / 2;
+  const py = VIEW_H / 2 - ph / 2;
+
+  // Ultra-clean panel with subtle border
+  ctx.fillStyle = 'rgba(9, 13, 20, 0.96)';
+  ctx.fillRect(px, py, pw, ph);
+  ctx.strokeStyle = 'rgba(120, 160, 210, 0.22)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(px + 0.5, py + 0.5, pw - 1, ph - 1);
+
+  // Minimalist top bar
+  text(ctx, 'COMBAT GUIDE', px + 36, py + 38, {
+    size: 16, color: BONE, weight: 'bold', spacing: 3,
+  });
+  text(ctx, 'PRESS [Q] OR [ESC] TO CLOSE', px + pw - 36, py + 38, {
+    size: 11, color: 'rgba(140, 160, 190, 0.65)', align: 'right', spacing: 1,
+  });
+
+  // Hairline separator
+  ctx.strokeStyle = 'rgba(100, 140, 190, 0.15)';
+  ctx.beginPath();
+  ctx.moveTo(px + 36, py + 52);
+  ctx.lineTo(px + pw - 36, py + 52);
+  ctx.stroke();
+
+  const p = game.player;
+  const hasSpell = p ? p.has('spell') : false;
+  const hasWing = p ? p.has('wing') : false;
+
+  const moves = [
+    {
+      name: 'Nail Slash',
+      key: 'A  /  Left Click',
+      desc: 'Swift melee blade strike. Recharges soul upon hit.',
+    },
+    {
+      name: 'Upward Cleave',
+      key: '▲ Up + A',
+      desc: 'Slashes airborne foes directly above.',
+    },
+    {
+      name: 'Downward Pogo',
+      key: '▼ Down + A  (In Air)',
+      desc: 'Strike spikes & enemies below to bounce upward & reset jumps.',
+      highlight: true,
+    },
+    {
+      name: 'Skitter Dash',
+      key: 'D  /  Right Click',
+      desc: 'Instant forward burst through danger.',
+      highlight: true,
+    },
+    {
+      name: 'Ranged Dart / Spell',
+      key: 'C  /  Shift + Right Click',
+      desc: hasSpell ? 'Piercing Wisp Bolt consuming soul.' : 'Free spectral dart for distant threats.',
+      highlight: true,
+    },
+    {
+      name: 'Focus Heal',
+      key: 'H  (Hold Grounded)',
+      desc: 'Channel soul to mend 1 mask.',
+    },
+    {
+      name: 'Jump & Double Jump',
+      key: 'Space',
+      desc: hasWing ? 'Grounded jump plus aerial Wingbeat flutter.' : 'Grounded jump (Wingbeat in Ember).',
+    },
+    {
+      name: 'Movement & Aim',
+      key: 'Arrow Keys',
+      desc: '◄ ► run, ▲ ▼ aim/look up and down.',
+    },
+  ];
+
+  const colW = (pw - 96) / 2;
+  for (let i = 0; i < moves.length; i++) {
+    const col = i < 4 ? 0 : 1;
+    const row = i < 4 ? i : i - 4;
+    const mx = px + 36 + col * (colW + 24);
+    const my = py + 72 + row * 74;
+
+    const m = moves[i];
+    // Minimalist card
+    ctx.fillStyle = m.highlight ? 'rgba(190, 225, 255, 0.05)' : 'rgba(14, 20, 30, 0.45)';
+    ctx.fillRect(mx, my, colW, 62);
+    ctx.strokeStyle = m.highlight ? 'rgba(180, 220, 255, 0.28)' : 'rgba(90, 120, 160, 0.14)';
+    ctx.strokeRect(mx + 0.5, my + 0.5, colW - 1, 61);
+
+    // Header: Name & Binding
+    text(ctx, m.name, mx + 14, my + 21, {
+      size: 13, color: m.highlight ? '#ffffff' : BONE, weight: 'bold',
+    });
+    text(ctx, m.key, mx + colW - 14, my + 21, {
+      size: 11, color: m.highlight ? GOLD : '#8ca0b8', align: 'right', weight: 'bold',
+    });
+
+    // Subtext description
+    text(ctx, m.desc, mx + 14, my + 44, {
+      size: 11, color: 'rgba(165, 185, 210, 0.82)',
+    });
+  }
+
+  // Minimal footer hint
+  text(ctx, 'HINT: Spike pogo bounces you safely across all hazard pits.', VIEW_W / 2, py + ph - 20, {
+    size: 11, color: '#ffcf8a', align: 'center', alpha: 0.9,
+  });
+
+  ctx.restore();
 }
 
 // ---------------------------------------------------------------------------

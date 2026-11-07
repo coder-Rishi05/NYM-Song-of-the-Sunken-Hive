@@ -121,7 +121,6 @@ export class Player {
       !uiLock &&
       input.wasPressed('dash') &&
       this.dashCd <= 0 &&
-      this.has('dash') &&
       this.castT <= 0
     ) {
       this.dashing = true;
@@ -133,7 +132,7 @@ export class Player {
       this.ghostTimer = 0;
       audio.sfx('dash');
       game.particles.burst(this.x + this.w / 2, this.y + this.h / 2, {
-        count: 9, speed: 120, color: '#cfe6ff', size: 2.6, life: 0.35,
+        count: 14, speed: 140, color: '#cfe6ff', size: 2.8, life: 0.35,
         shape: 'spark', angle: this.dashDir > 0 ? Math.PI : 0, spread: 0.9,
         additive: true,
       });
@@ -289,17 +288,45 @@ export class Player {
       this.focusT = 0;
     }
 
-    // ---- cast ----------------------------------------------------------
-    if (!uiLock && input.wasPressed('cast') && this.has('spell') && this.soul >= 33 && this.castT <= 0) {
-      this.soul -= 33;
-      this.castT = 0.3;
-      const dir = moveY < 0 ? 'up' : 'side';
-      game.spawnWisp(this.x + this.w / 2, this.y + this.h * 0.55, dir, this.facing);
-      audio.sfx('spell');
+    // ---- cast / range attack ------------------------------------------
+    if (!uiLock && input.wasPressed('cast') && this.castT <= 0) {
+      const soulCost = this.has('spell') ? 25 : 0; // Spell costs soul, basic ranged dart is free
+      if (this.has('spell') && this.soul < soulCost) {
+        // If spell unlocked but insufficient soul, fall back or block
+      } else {
+        if (this.has('spell')) this.soul -= soulCost;
+        this.castT = 0.28;
+        const dir = moveY < 0 ? 'up' : 'side';
+        game.spawnWisp(this.x + this.w / 2, this.y + this.h * 0.55, dir, this.facing, this.has('spell'));
+        audio.sfx('spell');
+      }
     }
 
     // ---- movement integration -----------------------------------------
     if (!this.dashing) {
+      // Check water tile immersion
+      if (game.room && game.room.water) {
+        const cx = Math.floor((this.x + this.w / 2) / TILE);
+        const cy = Math.floor((this.y + this.h * 0.75) / TILE);
+        if (cx >= 0 && cx < game.room.w && cy >= 0 && cy < game.room.h) {
+          if (game.room.water[cy * game.room.w + cx] === 1) {
+            this.vx *= 0.78;
+            this.vy = Math.min(this.vy, 280);
+            if (!this.inWater) {
+              this.inWater = true;
+              audio.sfx('dash');
+              game.particles.burst(this.x + this.w / 2, this.y + this.h, {
+                count: 8, speed: 60, color: '#88d0ff', size: 2.2, life: 0.3,
+                shape: 'dot', additive: true,
+              });
+            }
+          } else {
+            this.inWater = false;
+          }
+        } else {
+          this.inWater = false;
+        }
+      }
       moveBody(this, game.room, dt);
     } else {
       this.onGround = false;

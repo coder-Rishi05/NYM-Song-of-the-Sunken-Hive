@@ -6,7 +6,7 @@ export const FIXED_DT = 1 / 60;
 export const MAX_STEPS = 5;
 export const SAVE_SLOT = 1;
 
-export const params = new URLSearchParams(location.search);
+export const params = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
 export const DEBUG = params.has('debug');
 export const AUTOSTART = params.has('play');
 export const START_ROOM = params.get('room');

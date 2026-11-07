@@ -169,6 +169,9 @@ const sporefall = [
       { t: 'buzzer', x: 11, y: 10 },
       { t: 'crawlid', x: 35, y: 19 },
     ],
+    props: [
+      { t: 'maskShard', x: 29, y: 17, id: 'sporefall04_mask' },
+    ],
     doors: { west: { to: 'sporefall_03' }, east: { to: 'sporefall_05' } },
   }),
   makeRoom({
@@ -366,6 +369,7 @@ const reliquary = [
     ],
     props: [
       { t: 'tablet', x: 6, y: 21, text: 'Four gifts. Four doors. One lamp.\nThe old rhyme is shorter than the grief it carries.' },
+      { t: 'maskShard', x: 28, y: 18, id: 'reliquary02_mask' },
     ],
     doors: { west: { to: 'reliquary_01' }, east: { to: 'reliquary_03' } },
   }),

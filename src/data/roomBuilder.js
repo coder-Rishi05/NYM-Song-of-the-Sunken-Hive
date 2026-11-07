@@ -81,14 +81,14 @@ export function makeRoom(cfg) {
     carve('west');
     exits.push({
       x: 0, y: floor - 3, w: 1, h: 3,
-      to: doors.west.to, spawn: doors.west.spawn || 'west', need: doors.west.need,
+      to: doors.west.to, spawn: doors.west.spawn || 'east', need: doors.west.need,
     });
   }
   if (doors.east) {
     carve('east');
     exits.push({
       x: w - 1, y: floor - 3, w: 1, h: 3,
-      to: doors.east.to, spawn: doors.east.spawn || 'east', need: doors.east.need,
+      to: doors.east.to, spawn: doors.east.spawn || 'west', need: doors.east.need,
     });
   }
   for (const ex of cfg.exits || []) exits.push(ex);

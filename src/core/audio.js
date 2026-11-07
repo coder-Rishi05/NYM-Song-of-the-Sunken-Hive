@@ -214,6 +214,87 @@ class AudioEngine {
       const f2 = freq * 1.5;
       setTimeout(() => this.pluck(f2, 1.2, vol * 0.5), 260);
     }
+
+    // Biome dynamic environmental audio cues
+    this.playBiomeAmbience();
+  }
+
+  playBiomeAmbience() {
+    if (!this.ctx || !this.zone) return;
+    const now = this.ctx.currentTime;
+    const z = this.zone;
+
+    if (z === 'sporefall' || z === 'rootway') {
+      // Forest insect / bird chirp
+      if (Math.random() < 0.35) {
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        const baseF = 1800 + Math.random() * 600;
+        osc.frequency.setValueAtTime(baseF, now);
+        osc.frequency.exponentialRampToValueAtTime(baseF * 1.2, now + 0.08);
+        osc.frequency.exponentialRampToValueAtTime(baseF * 0.9, now + 0.16);
+        g.gain.setValueAtTime(0.012, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+        osc.connect(g);
+        g.connect(this.musicGain);
+        osc.start(now);
+        osc.stop(now + 0.22);
+      }
+    } else if (z === 'cistern') {
+      // Water drip ping
+      if (Math.random() < 0.45) {
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = 'sine';
+        const f = 900 + Math.random() * 400;
+        osc.frequency.setValueAtTime(f, now);
+        osc.frequency.exponentialRampToValueAtTime(f * 0.7, now + 0.12);
+        g.gain.setValueAtTime(0.025, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.24);
+        osc.connect(g);
+        g.connect(this.musicGain);
+        osc.start(now);
+        osc.stop(now + 0.26);
+      }
+    } else if (z === 'ember') {
+      // Ember crackle
+      if (Math.random() < 0.5) {
+        const src = this.ctx.createBufferSource();
+        src.buffer = this.noiseBuffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 800 + Math.random() * 1200;
+        filter.Q.value = 3;
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(0.02, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+        src.connect(filter);
+        filter.connect(g);
+        g.connect(this.musicGain);
+        src.start(now);
+        src.stop(now + 0.1);
+      }
+    } else if (z === 'reliquary') {
+      // Cold wind gust
+      if (Math.random() < 0.3) {
+        const src = this.ctx.createBufferSource();
+        src.buffer = this.noiseBuffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(260, now);
+        filter.frequency.linearRampToValueAtTime(540, now + 0.8);
+        filter.frequency.linearRampToValueAtTime(200, now + 1.6);
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(0.001, now);
+        g.gain.linearRampToValueAtTime(0.022, now + 0.7);
+        g.gain.linearRampToValueAtTime(0.0001, now + 1.7);
+        src.connect(filter);
+        filter.connect(g);
+        g.connect(this.musicGain);
+        src.start(now);
+        src.stop(now + 1.75);
+      }
+    }
   }
 
   pluck(freq, dur = 1.4, vol = 0.08) {

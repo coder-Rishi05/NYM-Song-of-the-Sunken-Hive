@@ -6,17 +6,17 @@ import { drawMoltguard, drawWardenMolt, drawChoirMother } from '../render/bosses
 export const BOSS_DEFS = {
   moltguard: {
     name: 'Moltguard, the First Molt',
-    hp: 180, w: 76, h: 58, dmg: 1, gravity: true,
+    hp: 130, w: 76, h: 58, dmg: 1, gravity: true,
     flag: 'boss_moltguard', music: 'boss',
   },
   warden: {
     name: 'Warden Molt',
-    hp: 420, w: 104, h: 96, dmg: 1, gravity: true,
+    hp: 220, w: 104, h: 96, dmg: 1, gravity: true,
     flag: 'boss_warden', music: 'boss',
   },
   choir: {
     name: 'The Choir Mother',
-    hp: 560, w: 80, h: 112, dmg: 1, gravity: false,
+    hp: 260, w: 80, h: 112, dmg: 1, gravity: false,
     flag: 'boss_choir', music: 'boss',
   },
 };

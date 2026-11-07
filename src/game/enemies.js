@@ -6,15 +6,15 @@ import { audio } from '../core/audio.js';
 
 export const ENEMY_DEFS = {
   crawlid:   { w: 34, h: 20, hp: 10, dmg: 1, speed: 52, shards: 5, gravity: true,  name: 'Crawlid' },
-  buzzer:    { w: 24, h: 24, hp: 8,  dmg: 1, speed: 95, shards: 6, gravity: false, name: 'Buzzer' },
-  sporeling: { w: 32, h: 28, hp: 12, dmg: 1, speed: 0,  shards: 7, gravity: true,  name: 'Sporeling' },
-  ramshell:  { w: 46, h: 36, hp: 22, dmg: 1, speed: 130, shards: 12, gravity: true, name: 'Ramshell' },
+  buzzer:    { w: 24, h: 24, hp: 10, dmg: 1, speed: 95, shards: 6, gravity: false, name: 'Buzzer' },
+  sporeling: { w: 32, h: 28, hp: 10, dmg: 1, speed: 0,  shards: 7, gravity: true,  name: 'Sporeling' },
+  ramshell:  { w: 46, h: 36, hp: 15, dmg: 1, speed: 130, shards: 12, gravity: true, name: 'Ramshell' },
   maskfly:   { w: 30, h: 24, hp: 10, dmg: 1, speed: 140, shards: 6, gravity: true, name: 'Maskfly' },
-  silkdrop:  { w: 26, h: 30, hp: 14, dmg: 1, speed: 320, shards: 8, gravity: true, name: 'Silkdrop' },
-  blowfly:   { w: 26, h: 26, hp: 8,  dmg: 1, speed: 110, shards: 5, gravity: false, name: 'Blowfly' },
-  bulwark:   { w: 36, h: 46, hp: 30, dmg: 1, speed: 36, shards: 14, gravity: true, name: 'Bulwark' },
-  chorister: { w: 34, h: 42, hp: 18, dmg: 1, speed: 70, shards: 12, gravity: false, name: 'Chorister' },
-  husk:      { w: 28, h: 44, hp: 26, dmg: 2, speed: 96, shards: 15, gravity: true, name: 'Husk Knight' },
+  silkdrop:  { w: 26, h: 30, hp: 10, dmg: 1, speed: 320, shards: 8, gravity: true, name: 'Silkdrop' },
+  blowfly:   { w: 26, h: 26, hp: 10, dmg: 1, speed: 110, shards: 5, gravity: false, name: 'Blowfly' },
+  bulwark:   { w: 36, h: 46, hp: 15, dmg: 1, speed: 36, shards: 14, gravity: true, name: 'Bulwark' },
+  chorister: { w: 34, h: 42, hp: 15, dmg: 1, speed: 70, shards: 12, gravity: false, name: 'Chorister' },
+  husk:      { w: 28, h: 44, hp: 20, dmg: 2, speed: 96, shards: 15, gravity: true, name: 'Husk Knight' },
 };
 
 const GRAVITY = 1900;
