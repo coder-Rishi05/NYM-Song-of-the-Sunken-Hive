@@ -108,6 +108,7 @@ export class Game {
     this.resize();
     input.onGesture(() => audio.init());
     audio.applySettings(this.settings);
+    this.setupPointerEvents();
 
     if (DEBUG) this.installDebugKeys();
     if (START_ROOM) this.debugStart(START_ROOM);
@@ -447,19 +448,139 @@ export class Game {
     return labels[clamp(this.titleIndex, 0, labels.length - 1)];
   }
 
-  // -------------------------------------------------------------------------
-  // Direct touch handler for menus (Title, Controls, Options, Pause, Guides)
-  // -------------------------------------------------------------------------
-  handleMenuTouch(x, y) {
-    // 1. Title Menu Touch: tap directly on Continue, New Game, Controls, Options
+  isMenuMode() {
+    return (
+      this.mode !== 'playing' ||
+      this.showAttackList ||
+      (this.touch && this.touch.detectMobile() && this.touch.isPortrait())
+    );
+  }
+
+  setupPointerEvents() {
+    const getCoords = (e) => {
+      const rect = this.canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return { x: 0, y: 0 };
+      return {
+        x: (e.clientX - rect.left) * (VIEW_W / rect.width),
+        y: (e.clientY - rect.top) * (VIEW_H / rect.height),
+      };
+    };
+
+    this.canvas.addEventListener('pointermove', (e) => {
+      if (e.pointerType === 'mouse') {
+        const pt = getCoords(e);
+        this.handleMenuHover(pt.x, pt.y);
+      }
+    });
+
+    this.canvas.addEventListener('pointerdown', (e) => {
+      if (this.isMenuMode()) {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        const pt = getCoords(e);
+        if (this.handleMenuTouch(pt.x, pt.y)) {
+          e.preventDefault();
+        }
+      }
+    });
+
+    this.canvas.addEventListener('pointerleave', () => {
+      this.canvas.style.cursor = 'default';
+    });
+  }
+
+  handleMenuHover(x, y) {
     if (this.mode === 'title') {
       const hasSave = !!readSave(SAVE_SLOT);
       const labels = this.titleLabels(hasSave);
       const startY = 410;
       for (let i = 0; i < labels.length; i++) {
         const itemY = startY + i * 42;
-        // Check tap hit within horizontal span around center
-        if (Math.abs(x - VIEW_W / 2) < 180 && Math.abs(y - itemY + 8) < 22) {
+        if (Math.abs(x - VIEW_W / 2) < 160 && Math.abs(y - (itemY - 7)) < 20) {
+          if (this.titleIndex !== i) {
+            this.titleIndex = i;
+          }
+          this.canvas.style.cursor = 'pointer';
+          return true;
+        }
+      }
+      this.canvas.style.cursor = 'default';
+      return false;
+    }
+
+    if (this.mode === 'paused') {
+      const items = ['Resume', 'Map', 'Controls', 'Options', 'Quit to Title'];
+      for (let i = 0; i < items.length; i++) {
+        const itemY = 260 + i * 44;
+        if (Math.abs(x - VIEW_W / 2) < 150 && Math.abs(y - (itemY - 6)) < 20) {
+          if (this.pauseIndex !== i) {
+            this.pauseIndex = i;
+          }
+          this.canvas.style.cursor = 'pointer';
+          return true;
+        }
+      }
+      this.canvas.style.cursor = 'default';
+      return false;
+    }
+
+    if (this.mode === 'controls' || this.mode === 'controlsPause') {
+      const pw = 680;
+      for (let i = 0; i < 15; i++) {
+        const rowY = 154 + i * 26;
+        if (x > VIEW_W / 2 - pw / 2 && x < VIEW_W / 2 + pw / 2 && Math.abs(y - (rowY - 5)) < 13) {
+          if (this.controlsIndex !== i) {
+            this.controlsIndex = i;
+          }
+          this.canvas.style.cursor = 'pointer';
+          return true;
+        }
+      }
+      this.canvas.style.cursor = 'default';
+      return false;
+    }
+
+    if (this.mode === 'options' || this.mode === 'optionsPause') {
+      for (let i = 0; i < 6; i++) {
+        const rowY = 295 + i * 38;
+        if (Math.abs(x - VIEW_W / 2) < 260 && Math.abs(y - (rowY - 5)) < 16) {
+          if (this.optionIndex !== i) {
+            this.optionIndex = i;
+          }
+          this.canvas.style.cursor = 'pointer';
+          return true;
+        }
+      }
+      this.canvas.style.cursor = 'default';
+      return false;
+    }
+
+    if (this.mode === 'dialogue' || this.mode === 'map' || this.showAttackList) {
+      this.canvas.style.cursor = 'pointer';
+      return true;
+    }
+
+    if (this.mode === 'playing') {
+      this.canvas.style.cursor = 'crosshair';
+      return false;
+    }
+
+    this.canvas.style.cursor = 'default';
+    return false;
+  }
+
+  // -------------------------------------------------------------------------
+  // Direct click / touch handler for menus (Title, Controls, Options, Pause, Guides)
+  // -------------------------------------------------------------------------
+  handleMenuTouch(x, y) {
+    // 1. Title Menu: click/tap directly on Continue, New Game, Controls, Options
+    if (this.mode === 'title') {
+      const hasSave = !!readSave(SAVE_SLOT);
+      const labels = this.titleLabels(hasSave);
+      const startY = 410;
+      for (let i = 0; i < labels.length; i++) {
+        const itemY = startY + i * 42;
+        // Check tap/click hit within horizontal span around center
+        if (Math.abs(x - VIEW_W / 2) < 160 && Math.abs(y - (itemY - 7)) < 20) {
           this.titleIndex = i;
           audio.sfx('select');
           const label = labels[i];
@@ -470,6 +591,7 @@ export class Game {
             this.controlsIndex = 0;
           } else if (label === 'Options') {
             this.mode = 'options';
+            this.optionIndex = 0;
           }
           return true;
         }
@@ -477,12 +599,12 @@ export class Game {
       return false;
     }
 
-    // 2. Pause Menu Touch: tap directly on options
+    // 2. Pause Menu: click/tap directly on options
     if (this.mode === 'paused') {
       const items = ['Resume', 'Map', 'Controls', 'Options', 'Quit to Title'];
       for (let i = 0; i < items.length; i++) {
         const itemY = 260 + i * 44;
-        if (Math.abs(x - VIEW_W / 2) < 160 && Math.abs(y - itemY + 8) < 22) {
+        if (Math.abs(x - VIEW_W / 2) < 150 && Math.abs(y - (itemY - 6)) < 20) {
           this.pauseIndex = i;
           audio.sfx('select');
           if (i === 0) this.mode = 'playing';
@@ -492,6 +614,7 @@ export class Game {
             this.controlsIndex = 0;
           } else if (i === 3) {
             this.mode = 'optionsPause';
+            this.optionIndex = 0;
           } else {
             this.saveData = this.buildSaveData();
             writeSave(SAVE_SLOT, this.saveData);
@@ -504,16 +627,19 @@ export class Game {
       return false;
     }
 
-    // 3. Controls Screen Touch
+    // 3. Controls Screen
     if (this.mode === 'controls' || this.mode === 'controlsPause') {
       const backMode = this.mode === 'controls' ? 'title' : 'paused';
       const pw = 680;
+      const actions = ['left', 'right', 'up', 'down', 'jump', 'attack', 'dash', 'focus', 'cast', 'attackList', 'map'];
       for (let i = 0; i < 15; i++) {
         const rowY = 154 + i * 26;
-        if (x > VIEW_W / 2 - pw / 2 && x < VIEW_W / 2 + pw / 2 && Math.abs(y - rowY + 5) < 14) {
+        if (x > VIEW_W / 2 - pw / 2 && x < VIEW_W / 2 + pw / 2 && Math.abs(y - (rowY - 5)) < 13) {
           this.controlsIndex = i;
           audio.sfx('select');
-          if (i === 11) {
+          if (i < actions.length) {
+            this.input.startRebind(actions[i]);
+          } else if (i === 11) {
             if (this.touch.userMode === 'auto') this.touch.userMode = 'always';
             else if (this.touch.userMode === 'always') this.touch.userMode = 'off';
             else this.touch.userMode = 'auto';
@@ -534,23 +660,34 @@ export class Game {
       return false;
     }
 
-    // 4. Options Screen Touch
+    // 4. Options Screen
     if (this.mode === 'options' || this.mode === 'optionsPause') {
       const backMode = this.mode === 'options' ? 'title' : 'paused';
       for (let i = 0; i < 6; i++) {
         const rowY = 295 + i * 38;
-        if (Math.abs(x - VIEW_W / 2) < 280 && Math.abs(y - rowY + 8) < 18) {
+        if (Math.abs(x - VIEW_W / 2) < 260 && Math.abs(y - (rowY - 5)) < 16) {
           this.optionIndex = i;
           audio.sfx('menu');
           const s = this.settings;
-          if (i === 0) s.master = (s.master + 0.2) % 1.2;
-          else if (i === 1) s.music = (s.music + 0.2) % 1.2;
-          else if (i === 2) s.sfx = (s.sfx + 0.2) % 1.2;
-          else if (i === 3) s.shake = s.shake ? 0 : 1;
-          else if (i === 4) s.flashes = s.flashes ? 0 : 1;
-          else if (i === 5) {
-            this.mode = backMode;
-            audio.sfx('select');
+          const barX = VIEW_W / 2 + 60;
+          const barW = 150;
+
+          if (i <= 2 && x >= barX && x <= barX + barW) {
+            // Direct slider click
+            const pct = Math.max(0, Math.min(1, Math.round(((x - barX) / barW) * 10) / 10));
+            if (i === 0) s.master = pct;
+            else if (i === 1) s.music = pct;
+            else if (i === 2) s.sfx = pct;
+          } else {
+            if (i === 0) s.master = Math.round(((s.master + 0.2) % 1.2) * 10) / 10;
+            else if (i === 1) s.music = Math.round(((s.music + 0.2) % 1.2) * 10) / 10;
+            else if (i === 2) s.sfx = Math.round(((s.sfx + 0.2) % 1.2) * 10) / 10;
+            else if (i === 3) s.shake = s.shake ? 0 : 1;
+            else if (i === 4) s.flashes = s.flashes ? 0 : 1;
+            else if (i === 5) {
+              this.mode = backMode;
+              audio.sfx('select');
+            }
           }
           audio.applySettings(s);
           writeSettings(s);
@@ -560,7 +697,7 @@ export class Game {
       return false;
     }
 
-    // 5. Dialogue Touch (advance dialogue on tap)
+    // 5. Dialogue (advance dialogue on click/tap)
     if (this.mode === 'dialogue') {
       const d = this.dialogue;
       if (d) {
@@ -581,7 +718,7 @@ export class Game {
       }
     }
 
-    // 6. Map or Attack List Touch: tap anywhere to dismiss
+    // 6. Map or Attack List: click/tap anywhere to dismiss
     if (this.mode === 'map') {
       this.mode = 'playing';
       audio.sfx('menu');
@@ -1204,7 +1341,7 @@ export class Game {
         if (this.touch.scale === 1.0) this.touch.scale = 1.15;
         else if (this.touch.scale > 1.0) this.touch.scale = 0.85;
         else this.touch.scale = 1.0;
-        this.touch.layoutButtons(this.canvas.width, this.canvas.height);
+        this.touch.layoutButtons(VIEW_W, VIEW_H);
       } else if (idx === 13) {
         input.resetBindings();
         this.toast('Controls reset to defaults.', 2);

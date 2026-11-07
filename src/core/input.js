@@ -219,6 +219,9 @@ export class Input {
     target.addEventListener('pointerdown', (e) => {
       this.notifyGesture();
       if (e.pointerType === 'mouse') {
+        if (window.__nym && window.__nym.isMenuMode && window.__nym.isMenuMode()) {
+          return;
+        }
         if (e.button === 0) {
           // Left click: attack
           this.mouseKeys.add('attack');

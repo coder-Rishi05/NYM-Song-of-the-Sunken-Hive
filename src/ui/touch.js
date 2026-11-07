@@ -1,4 +1,5 @@
 // Mobile touch controls, multi-touch tracking, and orientation detection.
+import { VIEW_W, VIEW_H } from '../config.js';
 import { TAU } from '../core/math.js';
 
 export class TouchController {
@@ -16,7 +17,7 @@ export class TouchController {
 
     // Defined virtual buttons
     this.buttons = [];
-    this.layoutButtons(canvas.width, canvas.height);
+    this.layoutButtons(VIEW_W, VIEW_H);
 
     this.attachEvents();
   }
@@ -58,30 +59,30 @@ export class TouchController {
     if (typeof window === 'undefined') return;
 
     window.addEventListener('resize', () => {
-      this.layoutButtons(this.canvas.width, this.canvas.height);
+      this.layoutButtons(VIEW_W, VIEW_H);
     });
 
     const onPointerDown = (e) => {
       if (e.pointerType === 'mouse') return;
-      if (!this.shouldShow()) return;
       const pt = this.getCanvasPoint(e);
+      const game = window.__nym;
 
-      // 1. Check virtual HUD buttons first (in-game or overlays)
+      // 1. Direct Tap-To-Select on Menus (Title screen, Pause, Options, Controls, Attack Guide, Dialogue, Map)
+      if (game && game.isMenuMode && game.isMenuMode()) {
+        if (game.handleMenuTouch && game.handleMenuTouch(pt.x, pt.y)) {
+          e.preventDefault();
+          return;
+        }
+      }
+
+      // 2. Virtual HUD buttons in gameplay
+      if (!this.shouldShow()) return;
       const hit = this.findHit(pt.x, pt.y);
       if (hit) {
         this.activePointers.set(e.pointerId, hit.id);
         this.input.setVirtual(hit.action, true);
         e.preventDefault();
         return;
-      }
-
-      // 2. Direct Tap-To-Select on Menus (Title screen, Pause, Options, Controls, Attack Guide)
-      if (window.__nym) {
-        const game = window.__nym;
-        if (game.handleMenuTouch && game.handleMenuTouch(pt.x, pt.y)) {
-          e.preventDefault();
-          return;
-        }
       }
     };
 
@@ -126,11 +127,10 @@ export class TouchController {
 
   getCanvasPoint(e) {
     const rect = this.canvas.getBoundingClientRect();
-    const scaleX = this.canvas.width / rect.width;
-    const scaleY = this.canvas.height / rect.height;
+    if (!rect.width || !rect.height) return { x: 0, y: 0 };
     return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
+      x: (e.clientX - rect.left) * (VIEW_W / rect.width),
+      y: (e.clientY - rect.top) * (VIEW_H / rect.height),
     };
   }
 
