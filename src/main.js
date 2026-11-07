@@ -18,10 +18,15 @@ function dismissBoot() {
   if (booted) return;
   booted = true;
   audio.init();
-  if (boot) boot.classList.add('hidden');
+  if (boot) {
+    boot.classList.add('hidden');
+    // Ensure the overlay completely yields all pointer events to canvas
+    boot.style.pointerEvents = 'none';
+  }
 }
 
-window.addEventListener('pointerdown', dismissBoot);
+window.addEventListener('pointerdown', dismissBoot, { passive: true });
+window.addEventListener('touchstart', dismissBoot, { passive: true });
 window.addEventListener('keydown', dismissBoot);
 window.addEventListener('gamepadconnected', dismissBoot);
 

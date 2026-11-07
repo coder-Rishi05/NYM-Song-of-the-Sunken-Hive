@@ -23,25 +23,28 @@ export class TouchController {
 
   detectMobile() {
     if (typeof window === 'undefined') return false;
-    const ua = navigator ? navigator.userAgent : '';
+    const ua = (window.navigator && window.navigator.userAgent) || (typeof navigator !== 'undefined' ? navigator.userAgent : '');
     const isMobileUA = /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-    const hasCoarseOnly = window.matchMedia && window.matchMedia('(pointer: coarse) and (hover: none)').matches;
+    const hasCoarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const nav = window.navigator || (typeof navigator !== 'undefined' ? navigator : null);
+    const hasTouchPoints = nav && nav.maxTouchPoints > 0;
     
-    // Handheld phone screen dimensions:
-    const isSmallPhoneViewport = Math.min(window.innerWidth, window.innerHeight) <= 600 || 
-      (window.innerWidth <= 920 && window.innerHeight <= 520);
-
-    // Desktop/Laptop OS check: desktop Windows, Mac, Linux should never show on-screen touch buttons
-    const isDesktopOS = /Windows NT|Macintosh|Linux x86_64/i.test(ua) && !/Mobile/i.test(ua);
-    if (isDesktopOS && !hasCoarseOnly) {
+    // Desktop OS check: standard Windows, Mac, Linux desktop should not show on-screen buttons
+    const isDesktopOS = /Windows NT|Macintosh|Linux x86_64/i.test(ua) && !/Mobile|Android/i.test(ua);
+    if (isDesktopOS && !isMobileUA) {
       return false;
     }
 
-    return (isMobileUA || hasCoarseOnly) && (isSmallPhoneViewport || isMobileUA);
+    return isMobileUA || (hasCoarse && hasTouchPoints);
   }
 
   isPortrait() {
     if (typeof window === 'undefined') return false;
+    // Check both orientation API and window dimensions
+    if (window.screen && window.screen.orientation && window.screen.orientation.type) {
+      if (window.screen.orientation.type.startsWith('portrait')) return true;
+      if (window.screen.orientation.type.startsWith('landscape')) return false;
+    }
     return window.innerHeight > window.innerWidth;
   }
 
@@ -62,11 +65,23 @@ export class TouchController {
       if (e.pointerType === 'mouse') return;
       if (!this.shouldShow()) return;
       const pt = this.getCanvasPoint(e);
+
+      // 1. Check virtual HUD buttons first (in-game or overlays)
       const hit = this.findHit(pt.x, pt.y);
       if (hit) {
         this.activePointers.set(e.pointerId, hit.id);
         this.input.setVirtual(hit.action, true);
         e.preventDefault();
+        return;
+      }
+
+      // 2. Direct Tap-To-Select on Menus (Title screen, Pause, Options, Controls, Attack Guide)
+      if (window.__nym) {
+        const game = window.__nym;
+        if (game.handleMenuTouch && game.handleMenuTouch(pt.x, pt.y)) {
+          e.preventDefault();
+          return;
+        }
       }
     };
 

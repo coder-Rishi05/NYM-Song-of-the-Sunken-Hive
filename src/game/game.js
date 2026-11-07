@@ -126,6 +126,9 @@ export class Game {
     this.dpr = Math.min(2, window.devicePixelRatio || 1);
     this.canvas.width = Math.floor(VIEW_W * this.dpr);
     this.canvas.height = Math.floor(VIEW_H * this.dpr);
+    if (this.touch) {
+      this.touch.layoutButtons(VIEW_W, VIEW_H);
+    }
   }
 
   installDebugKeys() {
@@ -442,6 +445,155 @@ export class Game {
   titleLabel(hasSave) {
     const labels = this.titleLabels(hasSave);
     return labels[clamp(this.titleIndex, 0, labels.length - 1)];
+  }
+
+  // -------------------------------------------------------------------------
+  // Direct touch handler for menus (Title, Controls, Options, Pause, Guides)
+  // -------------------------------------------------------------------------
+  handleMenuTouch(x, y) {
+    // 1. Title Menu Touch: tap directly on Continue, New Game, Controls, Options
+    if (this.mode === 'title') {
+      const hasSave = !!readSave(SAVE_SLOT);
+      const labels = this.titleLabels(hasSave);
+      const startY = 410;
+      for (let i = 0; i < labels.length; i++) {
+        const itemY = startY + i * 42;
+        // Check tap hit within horizontal span around center
+        if (Math.abs(x - VIEW_W / 2) < 180 && Math.abs(y - itemY + 8) < 22) {
+          this.titleIndex = i;
+          audio.sfx('select');
+          const label = labels[i];
+          if (label === 'New Game') this.startNewGame();
+          else if (label === 'Continue') this.continueGame();
+          else if (label === 'Controls') {
+            this.mode = 'controls';
+            this.controlsIndex = 0;
+          } else if (label === 'Options') {
+            this.mode = 'options';
+          }
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // 2. Pause Menu Touch: tap directly on options
+    if (this.mode === 'paused') {
+      const items = ['Resume', 'Map', 'Controls', 'Options', 'Quit to Title'];
+      for (let i = 0; i < items.length; i++) {
+        const itemY = 260 + i * 44;
+        if (Math.abs(x - VIEW_W / 2) < 160 && Math.abs(y - itemY + 8) < 22) {
+          this.pauseIndex = i;
+          audio.sfx('select');
+          if (i === 0) this.mode = 'playing';
+          else if (i === 1) this.mode = 'map';
+          else if (i === 2) {
+            this.mode = 'controlsPause';
+            this.controlsIndex = 0;
+          } else if (i === 3) {
+            this.mode = 'optionsPause';
+          } else {
+            this.saveData = this.buildSaveData();
+            writeSave(SAVE_SLOT, this.saveData);
+            this.mode = 'title';
+            this.loadingTitle = true;
+          }
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // 3. Controls Screen Touch
+    if (this.mode === 'controls' || this.mode === 'controlsPause') {
+      const backMode = this.mode === 'controls' ? 'title' : 'paused';
+      const pw = 680;
+      for (let i = 0; i < 15; i++) {
+        const rowY = 154 + i * 26;
+        if (x > VIEW_W / 2 - pw / 2 && x < VIEW_W / 2 + pw / 2 && Math.abs(y - rowY + 5) < 14) {
+          this.controlsIndex = i;
+          audio.sfx('select');
+          if (i === 11) {
+            if (this.touch.userMode === 'auto') this.touch.userMode = 'always';
+            else if (this.touch.userMode === 'always') this.touch.userMode = 'off';
+            else this.touch.userMode = 'auto';
+          } else if (i === 12) {
+            if (this.touch.scale === 1.0) this.touch.scale = 1.15;
+            else if (this.touch.scale > 1.0) this.touch.scale = 0.85;
+            else this.touch.scale = 1.0;
+            this.touch.layoutButtons(VIEW_W, VIEW_H);
+          } else if (i === 13) {
+            this.input.resetBindings();
+            this.toast('Controls reset to defaults.', 2);
+          } else if (i === 14) {
+            this.mode = backMode;
+          }
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // 4. Options Screen Touch
+    if (this.mode === 'options' || this.mode === 'optionsPause') {
+      const backMode = this.mode === 'options' ? 'title' : 'paused';
+      for (let i = 0; i < 6; i++) {
+        const rowY = 295 + i * 38;
+        if (Math.abs(x - VIEW_W / 2) < 280 && Math.abs(y - rowY + 8) < 18) {
+          this.optionIndex = i;
+          audio.sfx('menu');
+          const s = this.settings;
+          if (i === 0) s.master = (s.master + 0.2) % 1.2;
+          else if (i === 1) s.music = (s.music + 0.2) % 1.2;
+          else if (i === 2) s.sfx = (s.sfx + 0.2) % 1.2;
+          else if (i === 3) s.shake = s.shake ? 0 : 1;
+          else if (i === 4) s.flashes = s.flashes ? 0 : 1;
+          else if (i === 5) {
+            this.mode = backMode;
+            audio.sfx('select');
+          }
+          audio.applySettings(s);
+          writeSettings(s);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // 5. Dialogue Touch (advance dialogue on tap)
+    if (this.mode === 'dialogue') {
+      const d = this.dialogue;
+      if (d) {
+        const full = d.lines[d.index] || '';
+        if (d.chars < full.length) {
+          d.chars = full.length;
+        } else if (d.index < d.lines.length - 1) {
+          d.index += 1;
+          d.chars = 0;
+        } else {
+          this.mode = 'playing';
+          const cb = d.onDone;
+          this.dialogue = null;
+          if (cb) cb();
+        }
+        audio.sfx('select');
+        return true;
+      }
+    }
+
+    // 6. Map or Attack List Touch: tap anywhere to dismiss
+    if (this.mode === 'map') {
+      this.mode = 'playing';
+      audio.sfx('menu');
+      return true;
+    }
+    if (this.showAttackList) {
+      this.showAttackList = false;
+      audio.sfx('menu');
+      return true;
+    }
+
+    return false;
   }
 
   updateOptions(dt, backMode) {
