@@ -71,4 +71,27 @@ requestAnimationFrame((now) => {
 document.addEventListener('visibilitychange', () => {
   last = performance.now();
   acc = 0;
+  if (document.hidden) {
+    audio.pauseBGM();
+    if (audio.ctx && audio.ctx.state === 'running') {
+      audio.ctx.suspend().catch(() => {});
+    }
+  } else {
+    if (window.__nym && window.__nym.mode !== 'paused') {
+      audio.resumeBGM();
+    }
+    if (audio.ctx && audio.ctx.state === 'suspended') {
+      audio.ctx.resume().catch(() => {});
+    }
+  }
+});
+
+window.addEventListener('blur', () => {
+  audio.pauseBGM();
+});
+
+window.addEventListener('focus', () => {
+  if (window.__nym && window.__nym.mode !== 'paused') {
+    audio.resumeBGM();
+  }
 });
