@@ -18,6 +18,9 @@ function dismissBoot() {
   if (booted) return;
   booted = true;
   audio.init();
+  if (window.__nym && window.__nym.mode === 'title') {
+    audio.startZone('title');
+  }
   if (boot) {
     boot.classList.add('hidden');
     // Ensure the overlay completely yields all pointer events to canvas

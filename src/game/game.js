@@ -106,7 +106,10 @@ export class Game {
     this.resize = this.resize.bind(this);
     window.addEventListener('resize', this.resize);
     this.resize();
-    input.onGesture(() => audio.init());
+    input.onGesture(() => {
+      audio.init();
+      if (this.mode === 'title') audio.startZone('title');
+    });
     audio.applySettings(this.settings);
     this.setupPointerEvents();
 
@@ -397,6 +400,9 @@ export class Game {
       return;
     }
 
+    // Update audio engine continuously across all modes (title, paused, playing)
+    audio.update(dt, this.mode);
+
     switch (this.mode) {
       case 'title': this.updateTitle(dt); break;
       case 'options': this.updateOptions(dt, 'title'); break;
@@ -415,6 +421,9 @@ export class Game {
   }
 
   updateTitle(dt) {
+    if (audio.zone !== 'title') {
+      audio.startZone('title');
+    }
     const input = this.input;
     const hasSave = !!readSave(SAVE_SLOT);
     const labels = this.titleLabels(hasSave);
@@ -620,6 +629,8 @@ export class Game {
             writeSave(SAVE_SLOT, this.saveData);
             this.mode = 'title';
             this.loadingTitle = true;
+            audio.setBoss(false);
+            audio.startZone('title');
           }
           return true;
         }
@@ -833,7 +844,6 @@ export class Game {
     this.updateDamageNumbers(dt);
 
     this.camera.follow(this.player, { w: this.room.pxW, h: this.room.pxH }, dt);
-    audio.update(dt);
 
     this.enemies = this.enemies.filter((e) => !e.dead);
 
@@ -1304,6 +1314,8 @@ export class Game {
         writeSave(SAVE_SLOT, this.saveData);
         this.mode = 'title';
         this.loadingTitle = true;
+        audio.setBoss(false);
+        audio.startZone('title');
       }
     }
   }
