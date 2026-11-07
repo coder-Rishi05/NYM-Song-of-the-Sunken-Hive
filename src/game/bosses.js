@@ -93,12 +93,14 @@ export class Boss {
     this.hp -= amount;
     this.hitFlash = 0.12;
     this.flash = 0.4;
-    game.gainSoul(5);
-    game.camera.addShake(3);
+    if (game && game.gainSoul) game.gainSoul(5);
+    if (game && game.camera) game.camera.addShake(3);
     audio.sfx('hit');
-    game.particles.burst(fromX, this.cy, {
-      count: 8, speed: 130, color: '#ffe0b0', size: 2.4, life: 0.35, additive: true,
-    });
+    if (game && game.particles) {
+      game.particles.burst(typeof fromX === 'number' ? fromX : this.cx, this.cy, {
+        count: 8, speed: 130, color: '#ffe0b0', size: 2.4, life: 0.35, additive: true,
+      });
+    }
 
     for (let i = 0; i < this.phaseThresholds.length; i++) {
       if (this.phaseIndex === i && this.hp / this.maxHp <= this.phaseThresholds[i]) {

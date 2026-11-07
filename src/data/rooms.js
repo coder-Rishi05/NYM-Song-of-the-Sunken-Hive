@@ -1,11 +1,11 @@
 import { makeRoom } from './roomBuilder.js';
 
 // ---------------------------------------------------------------------------
-// 1. CRADLE OF ASH
+// 1. CRADLE OF ASH (Forest Thicket & Glacial Reaches)
 // ---------------------------------------------------------------------------
 const cradle = [
   makeRoom({
-    id: 'cradle_01', name: 'Cradle of Ash', zone: 'cradle', map: [0, 4], w: 40, h: 24,
+    id: 'cradle_01', name: 'The Sunken Thicket', zone: 'forest', map: [0, 4], w: 40, h: 24,
     platforms: [[10, 18, 5], [20, 16, 6], [31, 18, 4]],
     enemies: [{ t: 'crawlid', x: 15, y: 19 }, { t: 'crawlid', x: 30, y: 19 }],
     props: [
@@ -15,7 +15,7 @@ const cradle = [
     doors: { east: { to: 'cradle_02' } },
   }),
   makeRoom({
-    id: 'cradle_02', name: 'Ashfall Passage', zone: 'cradle', map: [1, 4], w: 40, h: 24,
+    id: 'cradle_02', name: 'Whispering Canopy', zone: 'forest', map: [1, 4], w: 40, h: 24,
     platforms: [[7, 18, 6], [17, 16, 5], [27, 18, 7]],
     enemies: [
       { t: 'crawlid', x: 12, y: 19 },
@@ -26,7 +26,7 @@ const cradle = [
     doors: { west: { to: 'cradle_01' }, east: { to: 'cradle_03' } },
   }),
   makeRoom({
-    id: 'cradle_03', name: 'The Kindling Rest', zone: 'cradle', map: [2, 4], w: 40, h: 24,
+    id: 'cradle_03', name: 'The Glacial Rest', zone: 'snow', map: [2, 4], w: 40, h: 24,
     platforms: [[8, 18, 5], [28, 18, 5]],
     enemies: [{ t: 'crawlid', x: 33, y: 19 }],
     props: [
@@ -38,7 +38,7 @@ const cradle = [
     doors: { west: { to: 'cradle_02' }, east: { to: 'cradle_04' } },
   }),
   makeRoom({
-    id: 'cradle_04', name: 'Rootward Door', zone: 'cradle', map: [3, 4], w: 40, h: 24,
+    id: 'cradle_04', name: 'Frostward Gate', zone: 'snow', map: [3, 4], w: 40, h: 24,
     platforms: [[8, 18, 4], [18, 16, 6], [30, 18, 5]],
     enemies: [{ t: 'crawlid', x: 14, y: 19 }, { t: 'buzzer', x: 26, y: 12 }],
     props: [{ t: 'tablet', x: 34, y: 19, text: 'Beyond this door the roots remember\neverything the hive has forgotten.' }],

@@ -236,14 +236,14 @@ export function drawBackdrop(ctx, room, cam, time) {
   ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
   // ---- biomes weather & wildlife --------------------------------------
-  if (room.zone === 'sporefall' || room.zone === 'rootway') {
+  if (room.zone === 'sporefall' || room.zone === 'rootway' || room.zone === 'forest') {
     drawForestLeaves(ctx, room, cam, time, pal);
     drawFireflies(ctx, room, cam, time, pal);
   } else if (room.zone === 'ember') {
     drawEmbers(ctx, room, cam, time, pal);
   } else if (room.zone === 'cistern') {
     drawWaterDrips(ctx, room, cam, time, pal);
-  } else if (room.zone === 'reliquary') {
+  } else if (room.zone === 'reliquary' || room.zone === 'snow') {
     drawSnow(ctx, room, cam, time, pal);
   } else if (room.zone === 'cradle' || room.zone === 'vault') {
     drawAshWinds(ctx, room, cam, time, pal);

@@ -85,13 +85,3 @@ document.addEventListener('visibilitychange', () => {
     }
   }
 });
-
-window.addEventListener('blur', () => {
-  audio.pauseBGM();
-});
-
-window.addEventListener('focus', () => {
-  if (window.__nym && window.__nym.mode !== 'paused') {
-    audio.resumeBGM();
-  }
-});

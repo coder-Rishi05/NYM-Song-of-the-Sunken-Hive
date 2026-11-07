@@ -105,7 +105,10 @@ export class Enemy {
   hurt(amount, fromX, game, opts = {}) {
     if (this.dead) return 0;
     let dmg = amount;
-    if (this.burrowed) return 0;
+    if (this.burrowed) {
+      this.burrowed = false;
+      this.state = 'leap';
+    }
 
     if (this.shielded) {
       const fromFront = (fromX < this.cx && this.facing < 0) || (fromX > this.cx && this.facing > 0);

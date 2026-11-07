@@ -7,6 +7,8 @@ import { NO_AUDIO } from '../config.js';
 const TRACKS = {
   title: 'assets/audio/bgm_title.mp3',       // Spooky Music Box Waltz (CC0) by Aureolus_Omicron
   cradle: 'assets/audio/bgm_title.mp3',      // Melancholic music box cradle theme
+  forest: 'assets/audio/bgm_title.mp3',      // Lush dark forest waltz
+  snow: 'assets/audio/bgm_cistern.mp3',      // Glacial frozen sanctuary
   rootway: 'assets/audio/bgm_ambient.mp3',   // Deep dark atmospheric cavern ambience
   sporefall: 'assets/audio/bgm_ambient.mp3', // Eerie organic spore caverns
   cistern: 'assets/audio/bgm_cistern.mp3',   // Cold silence / sunken flooded halls

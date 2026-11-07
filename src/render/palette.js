@@ -1,4 +1,18 @@
 export const ZONE_PALETTE = {
+  forest: {
+    sky: ['#040d0a', '#0d261a', '#06130d'],
+    far: '#0a1d14', mid: '#133224', near: '#1c4532',
+    terrain: '#08140e', terrainTop: '#3e8455', terrainEdge: '#62c282',
+    light: '#72f098', glow: '#a2ffbe', accent: '#d2ffe0',
+    hazard: '#b8433a', fog: '#06130d', water: '#12382b',
+  },
+  snow: {
+    sky: ['#060e1a', '#14253e', '#081424'],
+    far: '#0d1d33', mid: '#162e4f', near: '#224472',
+    terrain: '#0a1728', terrainTop: '#b8e2f8', terrainEdge: '#e2f4ff',
+    light: '#9be2ff', glow: '#dcf4ff', accent: '#ffffff',
+    hazard: '#c44860', fog: '#081424', water: '#183a54',
+  },
   cradle: {
     sky: ['#090b11', '#171c27', '#0b0e15'],
     far: '#10141d', mid: '#171e2b', near: '#202939',

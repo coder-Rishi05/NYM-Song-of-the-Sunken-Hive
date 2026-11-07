@@ -934,13 +934,27 @@ export class Game {
 
   updateHazards() {
     const p = this.player;
-    if (!p || p.dead || p.iFrames > 0) return;
+    if (!p || p.dead) return;
+
+    // Void pit check (falling below bottom of room boundary)
+    if (p.y > this.room.pxH + 20) {
+      p.hurt(1, p.x, this);
+      p.x = p.safeX != null ? p.safeX : this.room.pxW / 2;
+      p.y = p.safeY != null ? p.safeY : (this.room.pxH - 4 * TILE);
+      p.vx = 0;
+      p.vy = 0;
+      this.camera.addShake(8);
+      audio.sfx('spike');
+      return;
+    }
+
+    if (p.iFrames > 0) return;
     for (const s of this.room.spikeRects) {
       if (rectsOverlap({ x: p.x, y: p.y, w: p.w, h: p.h }, s)) {
         const hurt = p.hurt(1, p.x + p.w / 2 + 1, this);
         if (hurt) {
-          p.x = p.safeX;
-          p.y = p.safeY;
+          p.x = p.safeX != null ? p.safeX : this.room.pxW / 2;
+          p.y = p.safeY != null ? p.safeY : (this.room.pxH - 4 * TILE);
           p.vx = 0;
           p.vy = 0;
         }
