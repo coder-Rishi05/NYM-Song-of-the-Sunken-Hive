@@ -29,21 +29,24 @@ The game is hosted on a lightweight, zero-dependency static server included in t
 
 ## Controls
 
-The game supports standard keyboard controls as well as USB / Bluetooth gamepads.
+The game supports standard keyboard, mouse, USB/Bluetooth gamepads, and **mobile touchscreen devices**. Custom keybindings can be configured in the in-game **Controls** menu.
 
-| Action | Keyboard | Gamepad | Description |
-|---|---|---|---|
-| **Move** | `A` / `D` or `←` / `→` | Left Stick / D-Pad | Horizontal movement |
-| **Look Up / Down** | `W` / `S` or `↑` / `↓` | Left Stick | Camera pan / directional slash |
-| **Jump** | `Space` or `K` | `A` / Cross | Variable height; coyote time (100 ms) + buffer (130 ms) |
-| **Attack (Splinter)** | `J` or Left Click | `X` / Square | 3-direction melee slash with nail bounce (**pogo**) |
-| **Dash (Skitter Dash)** | `L` or `Shift` | `RB` / `R1` | Quick horizontal burst across hazards and wide gaps |
-| **Wall Cling** | Push against wall | Left Stick / D-Pad | Slide and wall-jump upward |
-| **Double Jump (Wingbeat)** | `Space` / `K` (airborne) | `A` / Cross | Mid-air second jump |
-| **Cast (Wisp Bolt)** | `U` or Right Click | `B` / Circle | Consumes 33 Soul to launch a penetrating energy bolt |
-| **Focus (Heal)** | Hold `I` | Hold `Y` / Triangle | Stand still to channel 33 Soul and recover 1 Mask HP |
-| **Map** | `Tab` | `Back` / `Select` | View explored zones and discovered benches |
-| **Pause / Menu** | `Escape` | `Start` | Pause game, manage volume and accessibility options |
+| Action | Keyboard | Mouse | Mobile Touch | Gamepad | Description |
+|---|---|---|---|---|---|
+| **Move** | `←` / `→` (Arrow Keys) | — | D-Pad `◀` / `▶` | Left Stick / D-Pad | Horizontal movement |
+| **Look Up / Down** | `↑` / `↓` (Arrow Keys) | — | D-Pad `▲` / `▼` | Left Stick | Camera pan / directional slash |
+| **Jump** | `Space` | — | `JUMP` Button | `A` / Cross | Variable height; coyote time (100 ms) + buffer (130 ms) |
+| **Attack (Splinter)** | `A` | **Left Click** | `ATK` Button | `X` / Square | 3-direction melee slash with nail bounce (**pogo**) |
+| **Dash / Dodge** | `D` | **Right Click** | `DASH` Button | `RB` / `R1` | Quick horizontal burst across hazards and wide gaps |
+| **Focus (Heal)** | Hold `H` | — | Hold `HEAL` Button | Hold `Y` / Triangle | Stand still to channel 33 Soul and recover 1 Mask HP |
+| **Cast (Wisp Bolt)** | `C` | Shift + Right Click | `CAST` Button | `B` / Circle | Consumes 33 Soul to launch a penetrating bolt |
+| **Attack List Guide** | `Q` | — | — | — | Toggle in-game moves & abilities reference sheet |
+| **Interact / Rest** | `E` | — | `E` Prompt | `Y` / Triangle | Rest at benches, speak to NPCs, trade with Merchant |
+| **Double Jump (Wingbeat)**| `Space` (airborne) | — | `JUMP` Button | `A` / Cross | Mid-air second jump when unlocked |
+| **Map** | `Tab` or `M` | — | `MAP` Button | `Back` / `Select` | View explored zones and discovered benches |
+| **Pause / Menu** | `Escape` or `P` | — | `PAUSE` Button | `Start` | Pause game, manage volume, controls, and accessibility |
+
+> **Mobile Play:** On mobile phones, on-screen controls appear automatically. On laptop and desktop screens, mobile controls are hidden to keep the canvas clean. Portrait mode displays an animated orientation prompt; rotate your device to landscape for full gameplay. Touch button scale (Small, Medium, Large) can be adjusted in the **Controls** menu.
 
 ---
 
